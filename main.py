@@ -1,8 +1,8 @@
 import psycopg2
 
 class Banco:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, tabelas) -> None:
+              self.tabelas = tabelas
     
     def criar_tabelas(self):
         pass
@@ -10,26 +10,26 @@ class Banco:
     def gerador(self):
         pass
 
-    def print_tabelas(self, num):
-        if num == 1:
-            return cur.execute("SELECT * FROM alunos;")
-        if num == 2:
-            return cur.execute("SELECT * FROM disciplinas;")
-        if num == 3:
-            return cur.execute("SELECT * FROM cursos;")
-        if num == 4:
-            return cur.execute("SELECT * FROM professores;")
-        if num == 5:
-            return cur.execute("SELECT * FROM centros;")
-        if num == 6:
-            return cur.execute("SELECT * FROM campus;")
-        if num == 7:
-            return cur.execute("SELECT * FROM matriculas;")
-        if num == 8:
-            return cur.execute("SELECT * FROM turmas;")
-        if num == 9:
-            return cur.execute("SELECT * FROM locais;")
+    def print_tabelas(self):
+        for i in self.tabelas:
+            print(f"\n\n## TUPLAS DE {self.tabelas[i]}\n")
+            cur.execute(f"SELECT * FROM {self.tabelas[i]};")
+            res = cur.fetchall()
+            print(res)
 
+    def drop_tabelas(self):
+        for i in self.tabelas:
+            cur.execute(f"DELETE FROM {self.tabelas[i]};")
+
+    def select_tabela(self, digito):
+
+        if digito in self.tabelas:
+            cur.execute(f"SELECT * FROM {digito}")
+            res = cur.fetchall()
+            print(res)
+        else:
+            print("Erro: tabela não encontrada.")
+        
 
 while True:
     print("Conectando com o banco 401339...")
@@ -46,6 +46,20 @@ print("Criando tabelas...")
 
 #TODO: Criar as tabelas pela instância da classe Banco
 
+tabelas = [
+    "alunos",
+    "alunos_disciplinas",
+    "campus",
+    "centros",
+    "cursos",
+    "disciplinas",
+    "locais",
+    "municipios",
+    "professores",
+    "reitores",
+    "turmas",
+]
+
 print("######################################################")
 print("## PROGRAMA DE MANIPULAÇÃO DE DADOS DO BANCO 401339 ##")
 print("######################################################\n\n")
@@ -57,11 +71,11 @@ while True:
         print("0 - Uso de comandos SQL diretamente")
         print("1 - Gerar dados aleatórios para todas essas tabelas")
         print("2 - Mostrar todos os dados de todas as tabelas")
-        print("2 - Limpar todos os dados de todas as tabelas")
-        print("3 - Projetar (Select) alguma tabela específica")
-        print("4 - Inserir (Insert) dados em alguma tabela específica")
-        print("5 - Deletar (Delete) dados em alguma tabela específica")
-        print("6 - Desconectar o banco de dados e sair da aplicação")
+        print("3 - Limpar todos os dados de todas as tabelas")
+        print("4 - Projetar (Select) alguma tabela específica")
+        print("5 - Inserir (Insert) dados em alguma tabela específica")
+        print("6 - Deletar (Delete) dados em alguma tabela específica")
+        print("7 - Desconectar o banco de dados e sair da aplicação")
 
 
         try:
@@ -72,7 +86,7 @@ while True:
         except ValueError as VE:
             print("Dígito errado! Por favor, insira novamente um número de 0 a 9 para as seguintes opções:")
 
-    db = Banco()
+    db = Banco(tabelas)
 
     if num == 0:
         comando = input("Digite o comando em SQL que você deseja fazer no banco:\n")
@@ -81,3 +95,35 @@ while True:
         print(res)
     if num == 1:
         pass
+    if num == 2:
+        db.print_tabelas()
+    if num == 3:
+        db.drop_tabelas()
+    if num == 4:
+        print("Por favor, digite qual tabela você deseja projetar das listadas abaixo:\n")
+
+        for i in tabelas:
+            print("- ", end="")
+            print(tabelas[i])
+        print()
+
+        digito = input("Digite aqui: ")
+        db.select_tabela(digito)
+    if num == 5:
+        pass
+    
+    print("Pressione ENTER para continuar...")
+    try:
+        # Win32
+        from msvcrt import getch
+    except ImportError:
+        # UNIX
+        def getch():
+            import sys, tty, termios
+            fd = sys.stdin.fileno()
+            old = termios.tcgetattr(fd)
+            try:
+                tty.setraw(fd)
+                return sys.stdin.read(1)
+            finally:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old)
