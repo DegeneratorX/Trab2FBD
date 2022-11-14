@@ -80,4 +80,4 @@ while True:
         res = cur.fetchall()
         print(res)
     if num == 1:
-        db.
+        pass
