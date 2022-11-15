@@ -5,8 +5,6 @@ create table professores (
 	grau char(1) NOT NULL,
 	sexo char(1) NOT NULL,
 	nasc date NOT NULL,
-	id_reitor int unique,
-	data_adm date NOT NULL,
 	primary key (id_prof)
 );
 
@@ -20,14 +18,14 @@ create table municipios(
 	id_mun int NOT NULL,
 	nome varchar(50) NOT NULL,
 	primary key (id_mun)
-)
+);
 
 create table campus (
 	id_camp int,
 	nome varchar(50) NOT NULL,
 	id_reitor int NOT NULL,
 	id_mun int NOT NULL,
-	primary key (id_camp)
+	primary key (id_camp),
 	foreign key (id_reitor) references reitores(id_reitor),
 	foreign key (id_mun) references municipios(id_mun)
 );
@@ -38,7 +36,7 @@ create table centros (
 	id_camp int NOT NULL,
 	diretor int NOT NULL UNIQUE,
 	primary key (id_cen),
-	foreign key (diretor) references professores(id_prof)
+	foreign key (diretor) references professores(id_prof),
 	foreign key (id_camp) references campus(id_camp)
 );
 
@@ -59,7 +57,7 @@ create table disciplinas (
 	nome varchar(50) NOT NULL,
 	ementa varchar(200) NOT NULL,
 	id_prof int NOT NULL,
-	c_hor int NOT NULL,
+	c_hor int NOT NULL CHECK (c_hor >= 32 AND c_hor <= 128),
 	id_cur int NOT NULL,
 	foreign key (id_prof) references professores,
 	foreign key (id_cur) references cursos
@@ -74,7 +72,7 @@ create table locais (
 	descr varchar (100) NOT NULL,
 	tipo varchar(50) NOT NULL,
 	primary key (id_loc),
-	foreign key (id_cen) references centros(id_cen),
+	foreign key (id_cen) references centros(id_cen)
 );
 
 create table turmas (
@@ -109,7 +107,7 @@ create table alunos_disciplinas(
 	matricula int NOT NULL,
 	id_disc int NOT NULL,
 	nota int CHECK (nota>=0 and nota<=10),
-	avaliacao vachar(15) CHECK (avaliacao = 'Prova' or avaliacao = 'Trabalho' or avaliacao = 'prova' or avaliacao = 'trabalho'),
+	avaliacao varchar(15) CHECK (avaliacao = 'Prova' or avaliacao = 'Trabalho' or avaliacao = 'prova' or avaliacao = 'trabalho'),
 	foreign key (matricula) references alunos(matricula)
 	ON DELETE CASCADE,
 	foreign key (id_disc) references disciplinas(id_disc)
