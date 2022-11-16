@@ -160,11 +160,11 @@ class Banco:
             cur.execute("INSERT INTO campus VALUES(1, 'Pici', 1, 2)")
             cur.execute("INSERT INTO campus VALUES(2, 'Benfica', 1, 2)")
 
-            cur.execute("INSERT INTO centros VALUES(1, 'Centro de Ciências', 3, 1)")
-            cur.execute("INSERT INTO centros VALUES(2, 'Centro de Humanidades', 1, 2)")
+            cur.execute("INSERT INTO centros VALUES(1, 'Centro de Ciências', 1, 1)")
+            cur.execute("INSERT INTO centros VALUES(2, 'Centro de Humanidades', 2, 2)")
 
-            cur.execute("INSERT INTO cursos VALUES(1, 'História', 3000, 2, 2)")
-            cur.execute("INSERT INTO cursos VALUES(2, 'Física', 2500, 5, 2)")
+            cur.execute("INSERT INTO cursos VALUES(1, 'História', 2, 3000, 2)")
+            cur.execute("INSERT INTO cursos VALUES(2, 'Física', 5, 2500, 2)")
 
             cur.execute("INSERT INTO disciplinas VALUES(1, 'Idade Média I', 'Introdução a Idade Média', 2, 64, 1)")
             cur.execute("INSERT INTO disciplinas VALUES(2, 'Ótica I', 'Fundamentos da Ótica e propriedades da luz', 1, 96, 2)")
@@ -248,6 +248,7 @@ class Banco:
     def drop_tabelas(self):
         try:
             for i in range(len(self.tabelas)):
+                print(i, "\n")
                 cur.execute(f"DROP TABLE {self.tabelas[i]} CASCADE")
             conn.commit()
         except Exception as e:
@@ -283,8 +284,8 @@ tabelas = [
     "disciplinas",
     "locais",
     "municipios",
-    "professores",
     "reitores",
+    "professores",
     "turmas",
 ]
 
