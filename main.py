@@ -263,6 +263,7 @@ class Banco:
                 try:
                     cur.execute(f"INSERT INTO {digito} VALUES ({dados})")
                     conn.commit()
+                    print("Inserção bem sucecida!")
                 except Exception as e:
                     print(f"Erro: falha na inserção de dados. Detalhes: {e}")
                     conn.rollback()
@@ -318,6 +319,7 @@ class Banco:
                 FOR EACH ROW
                 EXECUTE FUNCTION tr_qtdalun_func();
             """)
+            conn.commit()
         except Exception as e:
             print(f"Erro: erro na geração de triggers. Detalhes: {e}")
             conn.rollback()
@@ -332,18 +334,24 @@ class Banco:
                     where av.matricula = a.matricula and av.id_turm = t.id_turm and t.estado = 'CONCLUIDA'
                     group by a.matricula
                 """)
+                res = cur.fetchall()
+                print(res)
             if digito == 2:
                 print("\nInforme o semestre em formato XXXX.X desejado para verificar as turmas.")
                 dado = input("Digite aqui: ")
                 cur.execute(f"""
                     select * from turmas where semestre = '{dado}';
                 """)
+                res = cur.fetchall()
+                print(res)
             if digito == 3:
                 print("\nInforme o bloco para saber quais locais existem.")
                 dado = input("Digite aqui: ")
                 cur.execute(f"""
                     select * from locais where bloco = '{dado}';
                 """)
+                res = cur.fetchall()
+                print(res)
             if digito == 4:
                 print("\nInforme o local para saber as turmas alocadas nesse local.")
                 dado = input("Digite aqui: ")
@@ -357,6 +365,8 @@ class Banco:
                     left join locais l on t.id_loc = l.id_loc
                     where l.nome = '{dado}';
                 """)
+                res = cur.fetchall()
+                print(res)
             if digito == 5:
                 print("\nInforme a matrícula do aluno que se deseja ver as médias.")
                 dado = input("Digite aqui: ")
@@ -371,6 +381,8 @@ class Banco:
                     where a.matricula = {dado}
                     group by a.matricula, a.nome, t.semestre;
                 """)
+                res = cur.fetchall()
+                print(res)
         except Exception as e:
             print(f"Erro: erro na projeção dos dados. Detalhes: {e}")
 
@@ -408,6 +420,7 @@ tabelas = [
 
 db = Banco(tabelas)
 db.criar_tabelas()
+db.trigger()
 db.vazio = False
 
 print("######################################################")
@@ -489,7 +502,7 @@ while True:
         print("5 - Visualizar as médias de um aluno dada a matrícula")
         num7error = False
         try:
-            digito = input("Digite aqui: ")
+            digito = int(input("Digite aqui: "))
             if(not (1 <= digito <= 5) and not digito.__class__ == int):
                 print("Dígito inválido!")
                 num7error = True
