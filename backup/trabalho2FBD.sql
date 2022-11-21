@@ -98,32 +98,35 @@ create table alunos (
 	nasc date NOT NULL,
 	ender varchar(100) NOT NULL,
 	sex char(1) NOT NULL,
+	id_turm int,
 	foreign key (id_cur) references cursos(id_cur),
+	foreign key (id_turm) references turmas(id_turm)
 );
 
 create table alunos_disciplinas(
 	matricula int NOT NULL,
 	id_disc int NOT NULL,
+	nota int CHECK (nota>=0 and nota<=10),
+	avaliacao varchar(15) CHECK (avaliacao = 'Prova' or avaliacao = 'Trabalho' or avaliacao = 'prova' or avaliacao = 'trabalho'),
 	foreign key (matricula) references alunos(matricula)
 	ON DELETE CASCADE,
 	foreign key (id_disc) references disciplinas(id_disc)
 	ON DELETE CASCADE
 );
 
-create table alunos_turmas (
-	matricula int,
-	id_turm int,
-	foreign key(matricula) references alunos ON DELETE CASCADE,
-	foreign key(id_turm) references turmas ON DELETE CASCADE
-)
 
-create table avaliacoes(
-	matricula int NOT NULL,
-	id_turm int NOT NULL,
-	nota int CHECK (nota>=0 and nota<=10),
-	avaliacao varchar(15) CHECK (avaliacao = 'Prova' or avaliacao = 'Trabalho' or avaliacao = 'prova' or avaliacao = 'trabalho'),
-	foreign key (matricula) references alunos(matricula)
-	ON DELETE CASCADE,
-	foreign key (id_turm) references turmas(id_turm)
-	ON DELETE CASCADE
-)
+select a.matricula as matricula,
+a.nome as nome,
+d.nome as nome_disciplina,
+sum(ad.nota)/count(ad.nota) as media_nota
+from alunos a
+left join alunos_disciplinas ad on a.matricula = ad.matricula
+left join disciplinas d on ad.id_disc = d.id_disc
+where a.matricula = '{dado}'
+group by a.matricula, a.nome, d.nome;
+
+
+select a.matricula, avg(ad.nota)
+from alunos a, turmas t, alunos_disciplinas ad
+where a.id_turm = t.id_turm and t.estado = 'CONCLUIDA'
+group by a.matricula

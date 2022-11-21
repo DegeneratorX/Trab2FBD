@@ -1,3 +1,11 @@
+# VICTOR MEDEIROS MARTINS - 401339
+# CAIO CAVALCANTE - 388832
+
+##############################################################
+# APLICAÇÃO COM INTERFACE PARA SE CONECTAR AO BANCO DE DADOS #
+##############################################################
+
+
 import psycopg2
 
 class Banco:
@@ -6,8 +14,8 @@ class Banco:
     
     def criar_tabelas(self):
         try:
-            cur.execute(
-                """create table professores (
+            cur.execute("""
+                create table professores (
                     id_prof int,
                     nome varchar(50) NOT NULL,
                     email varchar(30) NOT NULL,
@@ -88,7 +96,7 @@ class Banco:
                     id_turm int,
                     id_disc int NOT NULL,
                     semestre char(6) NOT NULL,
-                    estado char(10) NOT NULL CHECK (estado = 'ABERTA' or estado = 'CONCLUÍDA'),
+                    estado char(10) NOT NULL CHECK (estado = 'ABERTA' or estado = 'CONCLUIDA'),
                     id_loc int NOT NULL,
                     hor char(11) NOT NULL,
                     dias varchar(50) NOT NULL,
@@ -107,21 +115,36 @@ class Banco:
                     nasc date NOT NULL,
                     ender varchar(100) NOT NULL,
                     sex char(1) NOT NULL,
-                    id_turm int,
-                    foreign key (id_cur) references cursos(id_cur),
-                    foreign key (id_turm) references turmas(id_turm)
+                    foreign key (id_cur) references cursos(id_cur)
                 );
 
                 create table alunos_disciplinas(
                     matricula int NOT NULL,
                     id_disc int NOT NULL,
-                    nota int CHECK (nota>=0 and nota<=10),
-                    avaliacao varchar(15) CHECK (avaliacao = 'Prova' or avaliacao = 'Trabalho' or avaliacao = 'prova' or avaliacao = 'trabalho'),
                     foreign key (matricula) references alunos(matricula)
                     ON DELETE CASCADE,
                     foreign key (id_disc) references disciplinas(id_disc)
                     ON DELETE CASCADE
-                );"""
+                );
+
+                create table alunos_turmas (
+                    matricula int,
+                    id_turm int,
+                    foreign key(matricula) references alunos ON DELETE CASCADE,
+                    foreign key(id_turm) references turmas ON DELETE CASCADE
+                );
+
+                create table avaliacoes(
+                    matricula int NOT NULL,
+                    id_turm int NOT NULL,
+                    nota int CHECK (nota>=0 and nota<=10),
+                    avaliacao varchar(15) CHECK (avaliacao = 'Prova' or avaliacao = 'Trabalho' or avaliacao = 'prova' or avaliacao = 'trabalho'),
+                    foreign key (matricula) references alunos(matricula)
+                    ON DELETE CASCADE,
+                    foreign key (id_turm) references turmas(id_turm)
+                    ON DELETE CASCADE
+                );
+                """
             )
             conn.commit()
             print("Tabelas criadas com sucesso.")
@@ -172,9 +195,23 @@ class Banco:
             cur.execute("INSERT INTO locais VALUES(1, 'Beco', 'Bloco 210', 1, 50, 'É um beco cheio de sala', 'bloco')")
 
             cur.execute("INSERT INTO turmas VALUES(1, 2, '2022.1', 'ABERTA', 1, '10h', 'seg qua sex', 50, 30)")
+            cur.execute("INSERT INTO turmas VALUES(2, 2, '2021.1', 'CONCLUIDA', 1, '8h', 'ter qui', 50, 40)")
 
-            cur.execute("INSERT INTO alunos VALUES(204060, 1, 'Zé', 'ze@gmail.com', '1997-07-03', 'Rua Z 2020', 'M', 1)")
+            cur.execute("INSERT INTO alunos VALUES(204060, 1, 'Zé', 'ze@gmail.com', '1997-07-03', 'Rua Z 2020', 'M')")
+            cur.execute("INSERT INTO alunos VALUES(303030, 1, 'Maria', 'maria@gmail.com', '1990-01-01', 'Rua Z 2020', 'F')")
+            cur.execute("insert into alunos values(404040,1,'Jao','jao@gmail.com','1990-01-02','Rua A 2012', 'M')")
+
+            cur.execute("insert into alunos_turmas values(404040, 1)")
+
+            cur.execute("insert into alunos_turmas values(204060, 2)")
+
+            cur.execute("insert into avaliacoes values(204060, 1, 9, 'Prova')")
+            cur.execute("insert into avaliacoes values(204060, 1, 7, 'Prova')")
+            cur.execute("insert into avaliacoes values(204060, 1, 9, 'Prova')")
+            cur.execute("insert into avaliacoes values(204060, 1, 7, 'Prova')")
+            
             conn.commit()
+            print("Dados gerados com sucesso.")
         except Exception as e:
             print(f"Erro: erro na geração de dados. Detalhes: {e}")
             conn.rollback()
@@ -193,10 +230,12 @@ class Banco:
 
     def apaga_tudo(self):
         try:
+            #cur.execute("SET foreign_key_checks = 0;")
             for i in range(len(self.tabelas)):
                 cur.execute(f"DELETE FROM {self.tabelas[i]} CASCADE")
             conn.commit()
             print("Todos os dados de todas as tabelas foram apagados com sucesso!")
+            #cur.execute("SET foreign_key_checks = 1;")
         except Exception as e:
             print(f"Erro: erro na remoção de todas as tuplas. Detalhes: {e}")
             conn.rollback()
@@ -232,12 +271,11 @@ class Banco:
         
 
     def delete_tabela(self, digito):
-        if digito in self.tabelas:
-            
-            print(f"Registros da tabela {digito} apagados com sucesso!")
+        if digito.lower() in self.tabelas:
             try:
-                cur.execute(f"DELETE FROM {digito}")
+                cur.execute(f"DELETE FROM {digito} CASCADE")
                 conn.commit()
+                print(f"Registros da tabela {digito} apagados com sucesso!")
             except Exception as e:
                 print(f"Erro: falha na remoção de dados. Detalhes: {e}")
                 conn.rollback()
@@ -255,6 +293,86 @@ class Banco:
             print(f"Erro: falha da remoção completa de tabelas. Detalhes: {e}")
             conn.rollback()
 
+    def trigger(self):
+        try:
+            cur.execute("""
+                create function tr_qtdalun_func() returns trigger as
+                $BODY$
+                BEGIN
+                    IF (TG_OP = 'INSERT') THEN
+                        UPDATE turmas SET qtd_alunos = qtd_alunos + 1
+                        WHERE id_turm = new.id_turm;
+                    ELSEIF (TG_OP = 'DELETE') THEN
+                        UPDATE turmas SET qtd_alunos = qtd_alunos - 1
+                        WHERE id_turm = old.id_turm;
+                    END IF;
+                    RETURN NULL;
+                END;
+                $BODY$
+                language plpgsql;
+            """)
+            cur.execute("""
+                CREATE TRIGGER tr_qtdalun
+                AFTER INSERT OR DELETE
+                ON alunos_turmas
+                FOR EACH ROW
+                EXECUTE FUNCTION tr_qtdalun_func();
+            """)
+        except Exception as e:
+            print(f"Erro: erro na geração de triggers. Detalhes: {e}")
+            conn.rollback()
+
+    
+    def consultas_especificas(self, digito):
+        try:
+            if digito == 1:
+                cur.execute("""
+                    select a.matricula, avg(av.nota)
+                    from alunos a, turmas t, avaliacoes av
+                    where av.matricula = a.matricula and av.id_turm = t.id_turm and t.estado = 'CONCLUIDA'
+                    group by a.matricula
+                """)
+            if digito == 2:
+                print("\nInforme o semestre em formato XXXX.X desejado para verificar as turmas.")
+                dado = input("Digite aqui: ")
+                cur.execute(f"""
+                    select * from turmas where semestre = '{dado}';
+                """)
+            if digito == 3:
+                print("\nInforme o bloco para saber quais locais existem.")
+                dado = input("Digite aqui: ")
+                cur.execute(f"""
+                    select * from locais where bloco = '{dado}';
+                """)
+            if digito == 4:
+                print("\nInforme o local para saber as turmas alocadas nesse local.")
+                dado = input("Digite aqui: ")
+                cur.execute(f"""
+                    select l.bloco as bloco,
+                    t.semestre as semestre,
+                    d.nome as nome_disciplina,
+                    t.dias as dias
+                    from turmas t
+                    left join disciplinas d on d.id_disc = t.id_disc
+                    left join locais l on t.id_loc = l.id_loc
+                    where l.nome = '{dado}';
+                """)
+            if digito == 5:
+                print("\nInforme a matrícula do aluno que se deseja ver as médias.")
+                dado = input("Digite aqui: ")
+                cur.execute(f"""
+                    select a.matricula as matricula,
+                    a.nome as nome,
+                    t.semestre as semestre,
+                    sum(av.nota)/count(av.nota) as media_nota
+                    from alunos a
+                    left join avaliacoes av on a.matricula = av.matricula
+                    left join turmas t on av.id_turm = t.id_turm
+                    where a.matricula = {dado}
+                    group by a.matricula, a.nome, t.semestre;
+                """)
+        except Exception as e:
+            print(f"Erro: erro na projeção dos dados. Detalhes: {e}")
 
 while True:
     print("Conectando com o banco 401339...")
@@ -272,12 +390,11 @@ while True:
 
 print("Criando tabelas...")
 
-#TODO: Criar as tabelas pela instância da classe Banco
-
-
 tabelas = [
     "alunos",
     "alunos_disciplinas",
+    "alunos_turmas",
+    "avaliacoes",
     "campus",
     "centros",
     "cursos",
@@ -290,6 +407,7 @@ tabelas = [
 ]
 
 db = Banco(tabelas)
+db.criar_tabelas()
 db.vazio = False
 
 print("######################################################")
@@ -299,7 +417,7 @@ print("######################################################\n\n")
 
 while True:
     while True:
-        print("\nInsira um número de 0 a 9 para as seguintes opções:\n")
+        print("\nInsira um número de 0 a 9 para as seguintes opções (-1 pra sair):\n")
         print("0 - Uso de comandos SQL diretamente")
         print("1 - Gerar dados aleatórios para todas essas tabelas")
         print("2 - Mostrar todos os dados de todas as tabelas")
@@ -307,14 +425,16 @@ while True:
         print("4 - Projetar (Select) alguma tabela específica")
         print("5 - Inserir (Insert) um dado em alguma tabela específica")
         print("6 - Deletar (Delete) todos os dados em alguma tabela específica")
-        print("7 - Desconectar o banco de dados e sair da aplicação")
+        print("7 - Consultas Específicas do Trabalho 2")
         print("8 - RECRIAR TABELAS DO TRABALHO 2 (CUIDADO)")
         print("9 - APAGAR TODAS AS TABELAS DO BANCO DE DADOS (CUIDADO)")
+        print("-1 - Desconectar o banco de dados e sair da aplicação")
+
 
 
         try:
             num = int(input("Digite aqui: "))
-            if((0 <= num <= 9) and num.__class__ == int):
+            if((-1 <= num <= 9) and num.__class__ == int):
                 break
             print("Dígito errado! Por favor, insira novamente um número de 0 a 9 para as seguintes opções:")
         except ValueError as VE:
@@ -361,14 +481,31 @@ while True:
         digito = input("Digite aqui: ")
         db.delete_tabela(digito)
     if num == 7:
+        print("\nPor favor, digite qual consulta das listadas abaixo você deseja fazer:\n")
+        print("1 - Visualizar média de cada aluno em uma turma concluída")
+        print("2 - Verificar todas as turmas de determinado semestre")
+        print("3 - Quais locais estão em um dado bloco")
+        print("4 - Visualizar as turmas de um determinado local")
+        print("5 - Visualizar as médias de um aluno dada a matrícula")
+        num7error = False
+        try:
+            digito = input("Digite aqui: ")
+            if(not (1 <= digito <= 5) and not digito.__class__ == int):
+                print("Dígito inválido!")
+                num7error = True
+        except ValueError as VE:
+            print("Dígito inválido!")
+            num7error = True
+        if not num7error:
+            db.consultas_especificas(digito)
+    if num == 8:
+        db.criar_tabelas()
+    if num == 9:
+        db.drop_tabelas()
+    if num == -1:
         print("Encerrando conexão e saindo da aplicação...")
         conn.close()
         exit()
-    if num == 8:
-            db.criar_tabelas()
-
-    if num == 9:
-            db.drop_tabelas()
 
 
     print("\nPressione qualquer tecla para continuar...")
